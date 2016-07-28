@@ -40,12 +40,12 @@ typedef struct {
 			{0.0, 0.0, 0.0, 0.0, 1.0, 0.0},
 			{0.0, 0.0, 0.0, 0.0, 0.0, 1.0} };
 	vector<vector<double> > target1 = {
-		{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 },
-		{ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 } };
+		{ 1.0 },
+		{ 1.0 },
+		{ 1.0 },
+		{ 1.0 },
+		{ 1.0 },
+		{ 1.0 } };
 	vector<vector<double> > sequence2 = {
 			{0.0, 0.0, 0.0, 0.0, 0.0, 1.0},
 			{0.0, 0.0, 0.0, 0.0, 1.0, 0.0},
@@ -54,24 +54,24 @@ typedef struct {
 			{0.0, 1.0, 0.0, 0.0, 0.0, 0.0},
 			{1.0, 0.0, 0.0, 0.0, 0.0, 0.0} };
 	vector<vector<double> > target2 = {
-		{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 },
-		{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 },
-		{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 },
-		{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 },
-		{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 },
-		{ -1.0, -1.0, -1.0, -1.0, -1.0, -1.0 } };
+		{ -1.0 },
+		{ -1.0 },
+		{ -1.0 },
+		{ -1.0 },
+		{ -1.0 },
+		{ -1.0 } };
 } Dataset;
 
 int main(int argc, char *argv[]) {
 	cout << "Program initializing" << endl;
 	if (argc < 5) {
-		cout << argv[0] << " <learning rate> <decay rate> <blocks> <cells>" << endl;
+		cout << argv[0] << " <learning rate> <decay rate> <blocks> <cells> <size ...>" << endl;
 		return -1;
 	}
 
 	int updatePoints = 100;
 	int savePoints = 10;
-	int maxEpoch = 100;
+	int maxEpoch = 1000;
 	int blocks = atoi(argv[3]);
 	int cells = atoi(argv[4]);
 	double errorBound = 0.01;
@@ -89,9 +89,9 @@ int main(int argc, char *argv[]) {
 	ostringstream errorDataFileName;
 	errorDataFileName << "/u/trabucco/Desktop/Temporal_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << getDate()->tm_mday <<
-			"_Single-Core-TDNN-Error_" << learningRate <<
+			"_Single-Core-LSTM-Error_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
-	ofstream errorData(errorDataFileName.str());
+	ofstream errorData(errorDataFileName.str(), ios::app);
 	if (!errorData.is_open()) return -1;
 
 
@@ -99,7 +99,12 @@ int main(int argc, char *argv[]) {
 	LSTMNetwork network = LSTMNetwork((dataset.inputSize), blocks, cells, learningRate, decayRate);
 
 
-	for (int e = 0; (e < maxEpoch) && (!e || (((mse1 + mse2)/2) > errorBound)); e++) {
+	for (int i = 0; i < (argc - 5); i++) {
+		network.addLayer(atoi(argv[5 + i]));
+	} network.addLayer(1);
+
+
+	for (int e = 0; (e < maxEpoch)/* && (!e || (((mse1 + mse2)/2) > errorBound))*/; e++) {
 		vector<double> error;
 
 		for (int i = 0; i < dataset.inputLength; i++) {

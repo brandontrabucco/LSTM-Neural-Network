@@ -10,6 +10,7 @@
 
 #include <vector>
 #include "MemoryBlock.h"
+#include "Neuron.h"
 using namespace std;
 
 class LSTMNetwork {
@@ -18,6 +19,7 @@ private:
 	double learningRate;
 	double decayRate;
 	vector<MemoryBlock> blocks;
+	vector<vector<Neuron> > layers;
 	vector<double> timeSteps;
 	int getPreviousNeurons();
 public:
@@ -25,6 +27,7 @@ public:
 	virtual ~LSTMNetwork();
 	vector<double> classify(vector<double> input);
 	vector<double> train(vector<double> input, vector<double> target);
+	void addLayer(int size);
 };
 
 #endif /* LSTMNETWORK_H_ */
