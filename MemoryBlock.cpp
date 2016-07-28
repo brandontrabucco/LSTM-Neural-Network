@@ -34,6 +34,7 @@ MemoryBlock::MemoryBlock(int nCells, int nConnections) {
 	}
 
 	for (int i = 0; i < nConnections; i++) {
+		impulse.push_back(0);
 		inputDataWeight.push_back(d(g));	// invalid memory
 		forgetDataWeight.push_back(d(g));
 		outputDataWeight.push_back(d(g));

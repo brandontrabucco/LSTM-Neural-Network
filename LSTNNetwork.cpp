@@ -26,9 +26,9 @@ vector<double> LSTMNetwork::classify(vector<double> input) {
 	if (input.size() == inputSize) {
 		// calculate activations from bottom up
 		for (int i = 0; i < (blocks.size()); i++) {
-			vector<double> activations = blocks[i].forward(input);
+			vector<double> activations = blocks[i].forward(input);	// on first iteration invalid
 			for (int j = 0; j < activations.size(); j++)
-				output.push_back(activations[i]);
+				output.push_back(activations[j]);	// here on first iteration
 		}
 		return output;
 	} else return output;
@@ -41,7 +41,7 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 		for (int i = 0; i < (blocks.size()); i++) {
 			vector<double> activations = blocks[i].forward(input);	// invalid read
 			for (int j = 0; j < activations.size(); j++) {
-				output.push_back(activations[i]);	// problem here, invalid read
+				output.push_back(activations[j]);	// problem here, invalid read
 			}
 		}
 		// start backward pass

@@ -30,8 +30,8 @@ MemoryCell::MemoryCell(int connections) {
 	for (int i = 0; i < connections; i++) {
 		cellDataWeight.push_back(d(g));
 		cellDataPartial.push_back(0);
-		forgetDataPartial.push_back(0);	// invalid memory
-		inputDataPartial.push_back(0);	// invalid memory
+		forgetDataPartial.push_back(0);
+		inputDataPartial.push_back(0);
 	}
 }
 
