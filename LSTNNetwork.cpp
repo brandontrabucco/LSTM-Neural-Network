@@ -37,9 +37,9 @@ vector<double> LSTMNetwork::classify(vector<double> input) {
 	if (input.size() == inputSize) {
 		// calculate activations from bottom up
 		for (int i = 0; i < (blocks.size()); i++) {
-			vector<double> activations = blocks[i].forward(connections);	// on first iteration invalid
+			vector<double> activations = blocks[i].forward(connections);
 			for (int j = 0; j < activations.size(); j++)
-				output.push_back(activations[j]);	// here on first iteration
+				output.push_back(activations[j]);
 		} connections = output;
 		output.clear();
 		for (int i = 0; i < layers.size(); i++) {
@@ -61,9 +61,9 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 		// start forward pass
 		// calculate activations from bottom up
 		for (int i = 0; i < (blocks.size()); i++) {
-			vector<double> activations = blocks[i].forward(connections);	// on first iteration invalid
+			vector<double> activations = blocks[i].forward(connections);
 			for (int j = 0; j < activations.size(); j++)
-				output.push_back(activations[j]);	// here on first iteration
+				output.push_back(activations[j]);
 		} connections = output;
 		output.clear();
 		for (int i = 0; i < layers.size(); i++) {
