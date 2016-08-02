@@ -33,22 +33,25 @@ void LSTMNetwork::addLayer(int size) {
 }
 
 vector<double> LSTMNetwork::classify(vector<double> input) {
-	vector<double> output, connections = input;
+	vector<double> output(blocks.size() * blocks[0].cells.size()), connections = input;
 	if (input.size() == inputSize) {
 		// calculate activations from bottom up
+		#pragma omp parallel for
 		for (int i = 0; i < (blocks.size()); i++) {
-			vector<double> activations = blocks[i].forward(connections);	// on first iteration invalid
+			vector<double> activations = blocks[i].forward(connections);
 			for (int j = 0; j < activations.size(); j++)
-				output.push_back(activations[j]);	// here on first iteration
+				output[i * activations.size() + j] = (activations[j]);
 		} connections = output;
 		output.clear();
+		output = vector<double>(layers[layers.size() - 1].size());
 		for (int i = 0; i < layers.size(); i++) {
-			vector<double> activations;
+			vector<double> activations(layers[i].size());
+			#pragma omp parallel for
 			for (int j = 0; j < layers[i].size(); j++) {
 				// compute the activation
-				activations.push_back(layers[i][j].forward(connections));
+				activations[j] = (layers[i][j].forward(connections));	// from here
 				// if at top of network, push to output
-				if (i == (layers.size() - 1)) output.push_back(activations[j]);
+				if (i == (layers.size() - 1)) output[j] = (activations[j]);	// error first
 			} connections = activations;
 		}
 		return output;
@@ -56,41 +59,49 @@ vector<double> LSTMNetwork::classify(vector<double> input) {
 }
 
 vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
-	vector<double> output, connections = input;
+	vector<double> output(blocks.size() * blocks[0].cells.size()), connections = input;
 	if (input.size() == inputSize) {
 		// start forward pass
 		// calculate activations from bottom up
+		#pragma omp parallel for
 		for (int i = 0; i < (blocks.size()); i++) {
-			vector<double> activations = blocks[i].forward(connections);	// on first iteration invalid
+			vector<double> activations = blocks[i].forward(connections);
 			for (int j = 0; j < activations.size(); j++)
-				output.push_back(activations[j]);	// here on first iteration
+				output[i * activations.size() + j] = (activations[j]);
 		} connections = output;
 		output.clear();
+		output = vector<double>(layers[layers.size() - 1].size());
 		for (int i = 0; i < layers.size(); i++) {
-			vector<double> activations;
+			vector<double> activations(layers[i].size());
+			#pragma omp parallel for
 			for (int j = 0; j < layers[i].size(); j++) {
 				// compute the activation
-				activations.push_back(layers[i][j].forward(connections));
+				activations[j] = (layers[i][j].forward(connections));
 				// if at top of network, push to output
-				if (i == (layers.size() - 1)) output.push_back(activations[j]);
+				if (i == (layers.size() - 1)) output[j] = (activations[j]);
 			} connections = activations;
 		}
 		// start backward pass
-		vector<double> weightedError;
+		vector<double> weightedError(output.size());
+		#pragma omp parallel for
 		for (int i = 0; i < output.size(); i++) {
-			weightedError.push_back(output[i] - target[i]);
+			weightedError[i] = (output[i] - target[i]);
 		} output = weightedError;
 		for (int i = (layers.size() - 1); i >= 0; i--) {
 			vector<double> errorSum(layers[i][0].weight.size(), 0.0);
+			#pragma omp parallel for
 			for (int j = 0; j < layers[i].size(); j++) {
 				// compute the activation
 				vector<double> contribution = layers[i][j].backward(weightedError[j], learningRate);
+				#pragma omp critical
 				for (int k = 0; k < contribution.size(); k++) {
 					errorSum[k] += contribution[k];
 				}
 			}
 			weightedError = errorSum;
-		} for (int i = 0; i < (blocks.size()); i++) {
+		}
+		#pragma omp parallel for
+		for (int i = 0; i < (blocks.size()); i++) {
 			// compute the activation
 			vector<double> errorChunk((weightedError.begin() + (i * blocks[i].cells.size())),
 					(weightedError.begin() + ((i + 1) * blocks[i].cells.size())));
