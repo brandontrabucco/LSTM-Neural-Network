@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
 
 	int updatePoints = 100;
 	int savePoints = 10;
-	int maxEpoch = 1000;
+	int maxEpoch = 100;
 	int blocks = atoi(argv[3]);
 	int cells = atoi(argv[4]);
 	double errorBound = 0.01;
@@ -103,13 +103,14 @@ int main(int argc, char *argv[]) {
 			}
 		}
 
-		int c = 0;
+		int c = 0, n = 0;
 		while (dataset.nextTestVideo()) {
 			vector<double> output;
 			while (dataset.nextTestFrame()) {
 				DatasetExample data = dataset.getTestFrame();
 				if (dataset.isLastTrainingFrame()) {
 					output = network.classify(data.frame);
+					n++;
 					if (OutputTarget::getTargetFromOutput(output) == data.label) c++;
 				} else network.classify(data.frame);
 			}
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
 			cout << "Error[" << e << "] = " << mse << endl;
 			cout << "Accuracy[" << e << "] = " << (100.0 * (float)c / (float)dataset.getTestSize()) << endl;
 		} errorData << e << ", " << mse << endl;
-		accuracyData << e << ", " << (100.0 * (float)c / (float)dataset.getTestSize()) << endl;
+		accuracyData << e << ", " << (100.0 * (float)c / (float)n) << endl;
 
 		dataset.reset();
 	}

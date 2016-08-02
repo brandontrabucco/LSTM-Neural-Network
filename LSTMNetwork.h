@@ -9,6 +9,7 @@
 #define LSTMNETWORK_H_
 
 #include <vector>
+#include <omp.h>
 #include "MemoryBlock.h"
 #include "Neuron.h"
 using namespace std;
