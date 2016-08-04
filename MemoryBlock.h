@@ -13,6 +13,8 @@
 #include <vector>
 #include <math.h>
 #include <time.h>
+#include <stdlib.h>
+#include <string.h>
 #include <iostream>
 #include <random>
 using namespace std;
@@ -21,24 +23,25 @@ class MemoryBlock : public BaseNode {
 private:
 	static long long n;
 public:
-	int connections;
-	vector<MemoryCell> cells;
-	vector<double> inputDataWeight,
-		forgetDataWeight, outputDataWeight,
-		bias, impulse,
-		inputFeedbackWeight, inputStateWeight,
-		forgetFeedbackWeight, forgetStateWeight,
-		outputFeedbackWeight, outputStateWeight;
+	int nConnections;
+	int nCells;
+	MemoryCell *cells;
+	double *inputDataWeight,
+		*forgetDataWeight, *outputDataWeight,
+		*bias, *impulse,
+		*inputFeedbackWeight, *inputStateWeight,
+		*forgetFeedbackWeight, *forgetStateWeight,
+		*outputFeedbackWeight, *outputStateWeight;
 	double input, inputPrime,
 		forget, forgetPrime,
 		output, outputPrime;
 	double inputGate(double data);
 	double forgetGate(double data);
 	double outputGate(double data);
-	MemoryBlock(int nCells, int connections);
+	MemoryBlock(int cl, int cn);
 	virtual ~MemoryBlock();
-	vector<double> forward(vector<double> input);
-	vector<double> backward(vector<double> errorPrime, double learningRate);
+	double *forward(double *input);
+	double *backward(double *errorPrime, double learningRate);
 };
 
 #endif /* MEMORYBLOCK_H_ */

@@ -13,6 +13,8 @@
 #include <math.h>
 #include <time.h>
 #include <iostream>
+#include <stdlib.h>
+#include <string.h>
 #include <random>
 using namespace std;
 
@@ -20,8 +22,8 @@ class MemoryCell : BaseNode {
 private:
 	static long long n;
 public:
-	vector<double> cellDataWeight, cellDataPartial,
-		inputDataPartial, forgetDataPartial;
+	double *cellDataWeight, *cellDataPartial,
+		*inputDataPartial, *forgetDataPartial;
 	double cellFeedbackWeight, bias;
 	double activationIn, activationInPrime,
 		activationOut, activationOutPrime,

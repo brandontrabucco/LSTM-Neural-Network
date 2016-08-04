@@ -27,16 +27,25 @@ MemoryCell::MemoryCell(int connections) {
 	forgetFeedbackPartial = 0;
 	forgetStatePartial = 0;
 
+	cellDataWeight = (double *)malloc(sizeof(double) * connections);
+	cellDataPartial = (double *)malloc(sizeof(double) * connections);
+	forgetDataPartial = (double *)malloc(sizeof(double) * connections);
+	inputDataPartial = (double *)malloc(sizeof(double) * connections);
+
 	for (int i = 0; i < connections; i++) {
-		cellDataWeight.push_back(d(g));
-		cellDataPartial.push_back(0);
-		forgetDataPartial.push_back(0);
-		inputDataPartial.push_back(0);
+		cellDataWeight[i] = (d(g));
+		cellDataPartial[i] = (0);
+		forgetDataPartial[i] = (0);
+		inputDataPartial[i] = (0);
 	}
 }
 
 MemoryCell::~MemoryCell() {
 	// TODO Auto-generated destructor stub
+	free(cellDataWeight);
+	free(cellDataPartial);
+	free(forgetDataPartial);
+	free(inputDataPartial);
 }
 
 double MemoryCell::activateIn(double data) {

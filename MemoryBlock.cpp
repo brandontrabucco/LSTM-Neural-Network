@@ -9,9 +9,10 @@
 
 long long int MemoryBlock::n = 0;
 
-MemoryBlock::MemoryBlock(int nCells, int nConnections) {
+MemoryBlock::MemoryBlock(int cl, int cn) {
 	// TODO Auto-generated constructor stub
-	connections = nConnections;
+	nConnections = cn;
+	nCells = cl;
 	input = 0; inputPrime = 0;
 	forget = 0; forgetPrime = 0;
 	output = 0; outputPrime = 0;
@@ -19,30 +20,52 @@ MemoryBlock::MemoryBlock(int nCells, int nConnections) {
 	default_random_engine g(time(0) + (n++));
 	normal_distribution<double> d(0, 1);
 
-	bias.push_back(0);
-	bias.push_back(0);
-	bias.push_back(0);
+	bias = (double *)calloc(3, sizeof(double));
+	cells = (MemoryCell *)malloc(sizeof(MemoryCell) * nCells);
+	inputFeedbackWeight = (double *)malloc(sizeof(double) * nCells);
+	inputStateWeight = (double *)malloc(sizeof(double) * nCells);
+	forgetFeedbackWeight = (double *)malloc(sizeof(double) * nCells);
+	forgetStateWeight = (double *)malloc(sizeof(double) * nCells);
+	outputFeedbackWeight = (double *)malloc(sizeof(double) * nCells);
+	outputStateWeight = (double *)malloc(sizeof(double) * nCells);
 
 	for (int i = 0; i < nCells; i++) {
-		cells.push_back(MemoryCell(nConnections));
-		inputFeedbackWeight.push_back(d(g));
-		inputStateWeight.push_back(d(g));
-		forgetFeedbackWeight.push_back(d(g));
-		forgetStateWeight.push_back(d(g));
-		outputFeedbackWeight.push_back(d(g));
-		outputStateWeight.push_back(d(g));
+		cells[i] = (MemoryCell(nConnections));
+		inputFeedbackWeight[i] = (d(g));
+		inputStateWeight[i] = (d(g));
+		forgetFeedbackWeight[i] = (d(g));
+		forgetStateWeight[i] = (d(g));
+		outputFeedbackWeight[i] = (d(g));
+		outputStateWeight[i] = (d(g));
 	}
 
+	impulse = (double *)malloc(sizeof(double) * nConnections);
+	inputDataWeight = (double *)malloc(sizeof(double) * nConnections);
+	forgetDataWeight = (double *)malloc(sizeof(double) * nConnections);
+	outputDataWeight = (double *)malloc(sizeof(double) * nConnections);
+
 	for (int i = 0; i < nConnections; i++) {
-		impulse.push_back(0);
-		inputDataWeight.push_back(d(g));	// invalid memory
-		forgetDataWeight.push_back(d(g));
-		outputDataWeight.push_back(d(g));
+		impulse[i] = (0);
+		inputDataWeight[i] = (d(g));
+		forgetDataWeight[i] = (d(g));
+		outputDataWeight[i] = (d(g));
 	}
 }
 
 MemoryBlock::~MemoryBlock() {
 	// TODO Auto-generated destructor stub
+	free(bias);
+	free(cells);
+	free(inputFeedbackWeight);
+	free(inputStateWeight);
+	free(forgetFeedbackWeight);
+	free(forgetStateWeight);
+	free(outputFeedbackWeight);
+	free(outputStateWeight);
+	free(impulse);
+	free(inputDataWeight);
+	free(forgetDataWeight);
+	free(outputDataWeight);
 }
 
 
@@ -64,15 +87,15 @@ double MemoryBlock::outputGate(double data) {
 	return output;
 }
 
-vector<double> MemoryBlock::forward(vector<double> input) {
-	vector<double> cellSum = vector<double>(cells.size(), 0.0);
+double *MemoryBlock::forward(double *input) {
+	double *cellSum = (double *)calloc(nCells, sizeof(double));
 	double inputSum = bias[0];
 	double forgetSum = bias[1];
 	double outputSum = bias[2];
 
-	impulse = input;
+	memcpy(impulse, input, (sizeof(double) * nConnections));
 
-	for (unsigned int i = 0; i < cells.size(); i++) {
+	for (int i = 0; i < nCells; i++) {
 		inputSum += (inputFeedbackWeight[i] * cells[i].feedback) +
 				(inputStateWeight[i] * cells[i].state);
 		forgetSum += (forgetFeedbackWeight[i] * cells[i].feedback) +
@@ -82,8 +105,8 @@ vector<double> MemoryBlock::forward(vector<double> input) {
 	}
 
 	// find the weighted sum of all input
-	for (unsigned int i = 0; i < input.size(); i++) {
-		for (unsigned int j = 0; j < cells.size(); j++) {
+	for (int i = 0; i < nConnections; i++) {
+		for (unsigned int j = 0; j < nCells; j++) {
 			cellSum[j] += input[i] * cells[j].cellDataWeight[i];
 		}
 		inputSum += input[i] * inputDataWeight[i];
@@ -92,8 +115,8 @@ vector<double> MemoryBlock::forward(vector<double> input) {
 	}
 
 	// compute input into memory
-	vector<double> output;
-	for (unsigned int i = 0; i < cells.size(); i++) {
+	double *output = (double *)malloc(sizeof(double) * nCells);
+	for (int i = 0; i < nCells; i++) {
 		cells[i].previousState = cells[i].state;
 		cells[i].state *= forgetGate(forgetSum);
 		cells[i].state += cells[i].activateIn(cellSum[i]) * inputGate(inputSum);
@@ -101,37 +124,39 @@ vector<double> MemoryBlock::forward(vector<double> input) {
 		// compute output of memory cell
 		cells[i].previousFeedback = cells[i].feedback;
 		cells[i].feedback = cells[i].activateOut(cells[i].state) * outputGate(outputSum);
-		output.push_back(cells[i].feedback);
+		output[i] = (cells[i].feedback);
 	}
+
+	free(cellSum);
 
 	return output;
 }
 
 // errorprime must be a vector with length of number of cells
-vector<double> MemoryBlock::backward(vector<double> errorPrime, double learningRate) {
-	vector<double> eta,
-			inputDataPartialSum(connections, 0),
-			forgetDataPartialSum(connections, 0);
+double *MemoryBlock::backward(double *errorPrime, double learningRate) {
+	double *eta = (double *)malloc(sizeof(double) * nCells),
+			*inputDataPartialSum = (double *)calloc(nConnections, sizeof(double)),
+			*forgetDataPartialSum =  (double *)calloc(nConnections, sizeof(double));
 	double blockSum = 0,
 			inputFeedbackPartialSum = 0,
 			inputStatePartialSum = 0,
 			forgetFeedbackPartialSum = 0,
 			forgetStatePartialSum = 0;
 
-	for (unsigned int i = 0; i < cells.size(); i++) {
+	for (int i = 0; i < nCells; i++) {
 		blockSum += cells[i].activationOut * errorPrime[i];
-		eta.push_back(output * cells[i].activationOutPrime * errorPrime[i]);
+		eta[i] = (output * cells[i].activationOutPrime * errorPrime[i]);
 		outputFeedbackWeight[i] -= learningRate * blockSum * outputPrime * cells[i].feedback;
 		outputStateWeight[i] -= learningRate * blockSum * outputPrime * cells[i].state;
 	}
 
-	for (unsigned int i = 0; i < outputDataWeight.size() && i < impulse.size(); i++) {
+	for (int i = 0; i < nConnections; i++) {
 		outputDataWeight[i] -= learningRate * blockSum * outputPrime * impulse[i];	// invalid read of size 8
 	}
 
 	// calculate the updates, and update the cell weights
-	for (unsigned int i = 0; i < cells.size(); i++) {
-		for (int j = 0; j < connections; j++) {
+	for (int i = 0; i < nCells; i++) {
+		for (int j = 0; j < nConnections; j++) {
 			cells[i].cellDataPartial[j] = cells[i].cellDataPartial[j] * forget + cells[i].activationInPrime * input * impulse[j];
 			cells[i].cellDataWeight[j] -= learningRate * eta[i] * cells[i].cellDataPartial[j];
 			cells[i].forgetDataPartial[j] = cells[i].forgetDataPartial[j] * forget + cells[i].previousState * forgetPrime * impulse[j];	// invalid read of size 8
@@ -152,13 +177,11 @@ vector<double> MemoryBlock::backward(vector<double> errorPrime, double learningR
 		cells[i].inputStatePartial = cells[i].inputStatePartial * forget + cells[i].activationIn * inputPrime * cells[i].previousState;
 		inputFeedbackPartialSum += eta[i] *cells[i].inputFeedbackPartial;
 		inputStatePartialSum += eta[i] *cells[i].inputStatePartial;
-
-
 	}
 
 	// update the input, output, and forget weights
-	for (unsigned int i = 0; i < cells.size(); i++) {
-		for (int j = 0; j < connections; j++) {
+	for (int i = 0; i < nCells; i++) {
+		for (int j = 0; j < nConnections; j++) {
 			forgetDataWeight[j] -= learningRate * forgetDataPartialSum[j];	// invalid read of size 8
 			inputDataWeight[j] -= learningRate * inputDataPartialSum[j];	// invalid read of size 8
 		}
@@ -168,21 +191,15 @@ vector<double> MemoryBlock::backward(vector<double> errorPrime, double learningR
 		forgetStateWeight[i] -= learningRate * forgetStatePartialSum;
 	}
 
-	// truncate error from flowing back, or let error flow
-	/*vector<double> weightedError;
-	for (unsigned int i = 0; i < cells.size(); i++) {
-		for (unsigned int j = 0; j < cells[i].cellDataWeight.size(); j++) {
-			if (i == 0)weightedError.push_back(0);
-			weightedError[j] += ((partialSum * input * cells[i].activationInPrime) * cells[i].cellDataWeight[j]);
-		}
-	}*/
-
-	vector<double> temp;	// runs out of memory
-	for (unsigned int i = 0; i < cells[0].cellDataWeight.size(); i++) {
-		temp.push_back(0.0);
+	double *temp = (double *)malloc(sizeof(double) * nConnections);
+	for (int i = 0; i < nConnections; i++) {
+		temp[i] = (0.0);
 	}
 
-	//return weightedError;
+	free(eta);
+	free(inputDataPartialSum);
+	free(forgetDataPartialSum);
+
 	return temp;
 }
 
