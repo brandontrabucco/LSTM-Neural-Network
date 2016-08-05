@@ -42,10 +42,6 @@ MemoryCell::MemoryCell(int connections) {
 
 MemoryCell::~MemoryCell() {
 	// TODO Auto-generated destructor stub
-	free(cellDataWeight);
-	free(cellDataPartial);
-	free(forgetDataPartial);
-	free(inputDataPartial);
 }
 
 double MemoryCell::activateIn(double data) {

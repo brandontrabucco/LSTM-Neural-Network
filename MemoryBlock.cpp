@@ -54,18 +54,6 @@ MemoryBlock::MemoryBlock(int cl, int cn) {
 
 MemoryBlock::~MemoryBlock() {
 	// TODO Auto-generated destructor stub
-	free(bias);
-	free(cells);
-	free(inputFeedbackWeight);
-	free(inputStateWeight);
-	free(forgetFeedbackWeight);
-	free(forgetStateWeight);
-	free(outputFeedbackWeight);
-	free(outputStateWeight);
-	free(impulse);
-	free(inputDataWeight);
-	free(forgetDataWeight);
-	free(outputDataWeight);
 }
 
 

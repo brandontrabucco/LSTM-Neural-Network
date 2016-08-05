@@ -97,9 +97,7 @@ int main(int argc, char *argv[]) {
 		while (dataset.nextTrainingVideo()) {
 			while (dataset.nextTrainingFrame()) {
 				DatasetExample data = dataset.getTrainingFrame();
-				//if (dataset.isLastTrainingFrame()) {
 				error = network.train(data.frame, OutputTarget::getOutputFromTarget(data.label));
-				//} else network.classify(data.frame);
 			}
 		}
 
@@ -108,11 +106,9 @@ int main(int argc, char *argv[]) {
 			vector<double> output;
 			while (dataset.nextTestFrame()) {
 				DatasetExample data = dataset.getTestFrame();
-				//if (dataset.isLastTrainingFrame()) {
 				output = network.classify(data.frame);
 				n++;
 				if (OutputTarget::getTargetFromOutput(output) == data.label) c++;
-				//} else network.classify(data.frame);
 			}
 		} networkEnd = getMSec();
 

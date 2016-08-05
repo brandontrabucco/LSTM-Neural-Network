@@ -90,7 +90,7 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 			} connections = (double *)realloc(connections, (sizeof(double) * layers[i].size()));
 			memcpy(connections, activations, (sizeof(double) * layers[i].size()));
 			free(activations);
-		}
+		} free(connections);
 		// start backward pass
 		double *weightedError = (double *)malloc((sizeof(double) * layers[layers.size() - 1].size()));
 		#pragma omp parallel for

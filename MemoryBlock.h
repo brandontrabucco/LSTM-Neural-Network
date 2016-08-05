@@ -10,7 +10,6 @@
 
 #include "BaseNode.h"
 #include "MemoryCell.h"
-#include <vector>
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
