@@ -96,7 +96,7 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 		#pragma omp parallel for
 		for (int i = 0; i < layers[layers.size() - 1].size(); i++) {
 			weightedError[i] = (output[i] - target[i]);
-		} memcpy(&output[0], &weightedError[0], (sizeof(double) * layers[layers.size() - 1].size()));
+		} memcpy(output, weightedError, (sizeof(double) * layers[layers.size() - 1].size()));
 		for (int i = (layers.size() - 1); i >= 0; i--) {
 			double *errorSum = (double *)calloc(layers[i][0].connections, sizeof(double));
 			#pragma omp parallel for
@@ -109,7 +109,7 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 				}
 				free(contribution);
 			} weightedError = (double *)realloc(weightedError, (sizeof(double) * layers[i][0].connections));
-			memcpy(&weightedError[0], &errorSum[0], (sizeof(double) * layers[i][0].connections));
+			memcpy(weightedError, errorSum, (sizeof(double) * layers[i][0].connections));
 			free(errorSum);
 		}
 		#pragma omp parallel for
@@ -117,7 +117,8 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 			// compute the activation
 			double *errorChunk = (double *)malloc(sizeof(double) * blocks[i].nCells);
 			memcpy(&errorChunk[0], &weightedError[(i * blocks[i].nCells)], (sizeof(double) * blocks[i].nCells));
-			blocks[i].backward(errorChunk, learningRate);
+			double *contribution = blocks[i].backward(errorChunk, learningRate);
+			free(contribution);
 			free(errorChunk);
 		} learningRate *= decayRate;
 		vector<double> result(&output[0], &output[layers[layers.size() - 1].size() - 1]);
