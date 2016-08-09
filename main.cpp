@@ -38,11 +38,13 @@ int main(int argc, char *argv[]) {
 		return -1;
 	}
 
-	int updatePoints = 100;
+	int updatePoints = 10;
 	int savePoints = 10;
-	int maxEpoch = 100;
+	int maxEpoch = 10;
+	int trainingSize = 500;
 	int blocks = atoi(argv[3]);
 	int cells = atoi(argv[4]);
+	int sumNeurons = (blocks * cells);
 	double errorBound = 0.01;
 	double mse = 0;
 	double learningRate = atof(argv[1]), decayRate = atof(argv[2]);
@@ -58,59 +60,81 @@ int main(int argc, char *argv[]) {
 	 *
 	 */
 	ostringstream errorDataFileName;
-	errorDataFileName << "/u/trabucco/Desktop/Temporal_Convergence_Data_Files/" <<
+	errorDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
 			"_Multicore-LSTM-Error_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
 	ofstream errorData(errorDataFileName.str(), ios::app);
 	if (!errorData.is_open()) return -1;
 
+	ostringstream timingDataFileName;
+	timingDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
+			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
+			"_Multicore-LSTM-Timing_" << learningRate <<
+			"-learning_" << decayRate << "-decay.csv";
+	ofstream timingData(timingDataFileName.str(), ios::app);
+	if (!timingData.is_open()) return -1;
 
 	ostringstream accuracyDataFileName;
-	accuracyDataFileName << "/u/trabucco/Desktop/Temporal_Convergence_Data_Files/" <<
+	accuracyDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
 			"_Multicore-LSTM-Accuracy_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
 	ofstream accuracyData(accuracyDataFileName.str(), ios::app);
 	if (!accuracyData.is_open()) return -1;
 
+	ostringstream outputDataFileName;
+	outputDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
+			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
+			"_Multicore-LSTM-Output_" << learningRate <<
+			"-learning_" << decayRate << "-decay.csv";
+	ofstream outputData(outputDataFileName.str(), ios::app);
+	if (!outputData.is_open()) return -1;
+	outputData << endl << endl;
+
 
 	networkStart = getMSec();
 	DatasetAdapter dataset = DatasetAdapter();
 	networkEnd = getMSec();
-	cout << "KTH Dataset loaded in " << (networkEnd - networkStart) << "msecs" << endl;
+	cout << "Language Dataset loaded in " << (networkEnd - networkStart) << "msecs" << endl;
 
 
-	LSTMNetwork network = LSTMNetwork(dataset.getFrameSize(), blocks, cells, learningRate, decayRate);
+	LSTMNetwork network = LSTMNetwork(dataset.getCharSize(), blocks, cells, learningRate, decayRate);
+	OutputTarget target = OutputTarget(dataset.getCharSize(), dataset.getCharSize());
 	cout << "Network initialized" << endl;
 
 
 	for (int i = 0; i < (argc - 5); i++) {
 		network.addLayer(atoi(argv[5 + i]));
-	} network.addLayer(6);
+		sumNeurons += atoi(argv[5 + i]);
+	} network.addLayer(dataset.getCharSize());
 
 
-	for (int e = 0; (e < maxEpoch)/* && (!e || (((mse1 + mse2)/2) > errorBound))*/; e++) {
-		vector<double> error;
+	int totalIterations = 0;
+	bool converged = false;
+	for (int e = 0; (e < maxEpoch); e++) {
+		int c = 0, n = 0;
+		vector<double> error, output;
 
 		networkStart = getMSec();
-		while (dataset.nextTrainingVideo()) {
-			while (dataset.nextTrainingFrame()) {
-				DatasetExample data = dataset.getTrainingFrame();
-				error = network.train(data.frame, OutputTarget::getOutputFromTarget(data.label));
-			}
+		for (int i = 0; i < trainingSize && dataset.nextChar(); i++) {
+			DatasetExample data = dataset.getChar();
+			error = network.train(target.getOutputFromTarget(data.current),
+					target.getOutputFromTarget(data.next));
 		}
 
-		int c = 0, n = 0;
-		while (dataset.nextTestVideo()) {
-			vector<double> output;
-			while (dataset.nextTestFrame()) {
-				DatasetExample data = dataset.getTestFrame();
-				output = network.classify(data.frame);
-				n++;
-				if (OutputTarget::getTargetFromOutput(output) == data.label) c++;
-			}
+		dataset.reset();
+
+		for (int i = 0; i < trainingSize && dataset.nextChar(); i++) {
+			DatasetExample data = dataset.getChar();
+			output = network.classify(target.getOutputFromTarget(data.current));
+
+			n++;
+			if (target.getTargetFromOutput(output) == (int)data.next) c++;
 		} networkEnd = getMSec();
+
+		sumTime += (networkEnd - networkStart);
+		totalIterations += 1;
 
 		mse = 0;
 		for (int i = 0; i < error.size(); i++)
@@ -120,14 +144,27 @@ int main(int argc, char *argv[]) {
 		if (((e + 1) % (maxEpoch / updatePoints)) == 0) {
 			cout << "Epoch " << e << " completed in " << (networkEnd - networkStart) << "msecs" << endl;
 			cout << "Error[" << e << "] = " << mse << endl;
-			cout << "Accuracy[" << e << "] = " << (100.0 * (float)c / (float)dataset.getTestSize()) << endl;
+			cout << "Accuracy[" << e << "] = " << (100.0 * (float)c / (float)n) << endl;
 		} errorData << e << ", " << mse << endl;
 		accuracyData << e << ", " << (100.0 * (float)c / (float)n) << endl;
 
 		dataset.reset();
 	}
 
+	vector<vector<double> > seed;
+	seed.push_back(target.getOutputFromTarget(125));
+	for (int i = 0; i < 500; i++) {
+		vector<double> output = network.classify(seed[i]);
+		seed.push_back(output);
+		char text = (char)target.getTargetFromOutput(output);
+		outputData << text;
+	}
+
+	timingData << sumNeurons << ", " << sumTime << ", " << totalIterations << endl;
+	timingData.close();
+	accuracyData.close();
 	errorData.close();
+	outputData.close();
 
 	return 0;
 }

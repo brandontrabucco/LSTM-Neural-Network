@@ -57,11 +57,14 @@ vector<double> LSTMNetwork::classify(vector<double> input) {
 			} connections = (double *)realloc(connections, (sizeof(double) * layers[i].size()));
 			memcpy(connections, activations, (sizeof(double) * layers[i].size()));
 			free(activations);
-		} vector<double> result(&output[0], &output[layers[layers.size() - 1].size() - 1]);
-		return result;
+		} vector<double> result(&output[0], &output[layers[layers.size() - 1].size()]);
 		free(output);
 		free(connections);
-	} else return vector<double>();
+		return result;
+	} else {
+		cout << "Target size mismatch " << input.size() << ":" << inputSize << endl;
+		return vector<double>();
+	}
 }
 
 vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
@@ -121,12 +124,12 @@ vector<double> LSTMNetwork::train(vector<double> input, vector<double> target) {
 			free(contribution);
 			free(errorChunk);
 		} learningRate *= decayRate;
-		vector<double> result(&output[0], &output[layers[layers.size() - 1].size() - 1]);
+		vector<double> result(&output[0], &output[layers[layers.size() - 1].size()]);
 		free(weightedError);
 		free(output);
 		return result;
 	} else {
-		cout << "Target size mismatch" << endl;
+		cout << "Target size mismatch " << input.size() << ":" << inputSize << endl;
 		return vector<double>();
 	}
 }
