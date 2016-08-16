@@ -22,19 +22,23 @@ class MemoryCell : BaseNode {
 private:
 	static long long n;
 public:
-	double *cellDataWeight, *cellDataPartial,
-		*inputDataPartial, *forgetDataPartial;
-	double cellFeedbackWeight, bias;
-	double activationIn, activationInPrime,
+	int nConnections;
+	vector<double> cellDataWeight;
+	vector<vector<double> > cellDataPartial,
+		inputDataPartial, forgetDataPartial;
+	double cellFeedbackWeight, bias, internalError;
+	vector<double> activationIn, activationInPrime,
 		activationOut, activationOutPrime,
 		state, previousState,
 		feedback, previousFeedback,
 		cellFeedbackPartial;
-	double inputFeedbackPartial, inputStatePartial,
+	vector<double> inputFeedbackPartial, inputStatePartial,
 		forgetFeedbackPartial, forgetStatePartial;
 	double activateIn(double data);
 	double activateOut(double data);
 	MemoryCell(int connections);
+	MemoryCell();
+	void clear();
 	virtual ~MemoryCell();
 };
 

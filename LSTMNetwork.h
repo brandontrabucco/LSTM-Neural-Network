@@ -16,19 +16,24 @@ using namespace std;
 
 class LSTMNetwork {
 private:
-	unsigned int inputSize;
+	int inputSize;
+	int timestep;
 	double learningRate;
 	double decayRate;
-	vector<MemoryBlock> blocks;
+	vector<vector<MemoryBlock> > blocks;
 	vector<vector<Neuron> > layers;
+	vector<vector<double> > error;
 	vector<double> timeSteps;
 	int getPreviousNeurons();
 public:
-	LSTMNetwork(int is, int b, int c, double l, double d);
+	LSTMNetwork(int is, double l, double d);
 	virtual ~LSTMNetwork();
-	vector<double> classify(vector<double> input);
-	vector<double> train(vector<double> input, vector<double> target);
+	void clear();
+	void backward();
+	vector<double> forward(vector<double> input);
+	vector<double> forward(vector<double> input, vector<double> target);
 	void addLayer(int size);
+	void addLSTMLayer(int size, int cells);
 };
 
 #endif /* LSTMNETWORK_H_ */

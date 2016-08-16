@@ -9,16 +9,14 @@
 
 long long Neuron::n = 0;
 
-Neuron::Neuron(int nConnections) {
+Neuron::Neuron(int connections) {
 	// TODO Auto-generated constructor stub
-	activation = 0; activationPrime = 0;
-	connections = nConnections;
+	//activation = 0; activationPrime = 0;
 	default_random_engine g(time(0) + (n++));
+	nConnections = connections;
 	normal_distribution<double> d(0, 1);
-	weight = (double *)malloc(sizeof(double) * nConnections);
-	impulse = (double *)calloc(nConnections, sizeof(double));
 	for (int i = 0; i < connections; i++) {
-		weight[i] = (d(g));
+		weight.push_back(d(g));
 	}
 }
 
@@ -42,28 +40,31 @@ double Neuron::activatePrime(double input) {
 	return (1 - (tanh(input) * tanh(input)));
 }
 
-double Neuron::forward(double *input) {
+double Neuron::forward(vector<double> input) {
 	double sum = 0;
-	memcpy(impulse, input, (sizeof(double) * connections));
+	//cout << "Input size: " << input.size() << endl;
+	impulse.push_back(input);
 
 	// find the weighted sum of all input
-	for (int i = 0; i < connections; i++) {
-		//cout << weight[i] << " ";
+	for (int i = 0; i < input.size(); i++) {
 		sum += input[i] * weight[i];
-	}// cout << " sum : " << sum << " weights : " << weight.size() << endl;
-	activation = activate(sum);
-	activationPrime = activatePrime(sum);
-	return activation;
+	} double a = activate(sum);
+	activation.push_back(a);
+	activationPrime.push_back(activatePrime(sum));
+	return a;
 }
 
-double *Neuron::backward(double errorPrime, double learningRate) {
-	double *weightedError;
-	weightedError = (double *)malloc(sizeof(double) * connections);
+vector<double> Neuron::backward(double errorPrime, double learningRate, int t, int length) {
+	vector<double> weightedError;
 	// update all weights
-	for (int i = 0; i < connections; i++) {
-		weightedError[i] = (errorPrime * weight[i] * activationPrime);
-		weight[i] -= learningRate * errorPrime * impulse[i];
-	}
-	return weightedError;
+	for (int i = 0; i < weight.size(); i++) {
+		weightedError.push_back(errorPrime * weight[i] * activationPrime[t]);
+		weight[i] -= (learningRate * errorPrime * impulse[t][i]) / length;
+	} return weightedError;
 }
 
+void Neuron::clear() {
+	impulse.clear();
+	activation.clear();
+	activationPrime.clear();
+}

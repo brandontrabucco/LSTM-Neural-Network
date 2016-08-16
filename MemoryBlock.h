@@ -24,14 +24,15 @@ private:
 public:
 	int nConnections;
 	int nCells;
-	MemoryCell *cells;
-	double *inputDataWeight,
-		*forgetDataWeight, *outputDataWeight,
-		*bias, *impulse,
-		*inputFeedbackWeight, *inputStateWeight,
-		*forgetFeedbackWeight, *forgetStateWeight,
-		*outputFeedbackWeight, *outputStateWeight;
-	double input, inputPrime,
+	vector<MemoryCell> cells;
+	vector<vector<double> > impulse;	// time based
+	vector<double> inputDataWeight,
+		forgetDataWeight, outputDataWeight,
+		bias,
+		inputFeedbackWeight, inputStateWeight,
+		forgetFeedbackWeight, forgetStateWeight,
+		outputFeedbackWeight, outputStateWeight;
+	vector<double> input, inputPrime,	// time based
 		forget, forgetPrime,
 		output, outputPrime;
 	double inputGate(double data);
@@ -39,8 +40,9 @@ public:
 	double outputGate(double data);
 	MemoryBlock(int cl, int cn);
 	virtual ~MemoryBlock();
-	double *forward(double *input);
-	double *backward(double *errorPrime, double learningRate);
+	void clear();
+	vector<double> forward(vector<double> input, int t);
+	vector<double> backward(vector<double> errorPrime, double learningRate, int t, int length);
 };
 
 #endif /* MEMORYBLOCK_H_ */

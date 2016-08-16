@@ -33,18 +33,16 @@ struct tm *getDate() {
 
 int main(int argc, char *argv[]) {
 	cout << "Program initializing" << endl;
-	if (argc < 5) {
-		cout << argv[0] << " <learning rate> <decay rate> <blocks> <cells> <size ...>" << endl;
+	if (argc < 3) {
+		cout << argv[0] << " <learning rate> <decay rate> <size ...>" << endl;
 		return -1;
 	}
 
-	int updatePoints = 10;
+	int updatePoints = 100;
 	int savePoints = 10;
-	int maxEpoch = 10;
-	int trainingSize = 500;
-	int blocks = atoi(argv[3]);
-	int cells = atoi(argv[4]);
-	int sumNeurons = (blocks * cells);
+	int maxEpoch = 1000;
+	int trainingSize = 1000;
+	int sumNeurons = 0;
 	double errorBound = 0.01;
 	double mse = 0;
 	double learningRate = atof(argv[1]), decayRate = atof(argv[2]);
@@ -62,7 +60,7 @@ int main(int argc, char *argv[]) {
 	ostringstream errorDataFileName;
 	errorDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
-			"_Multicore-LSTM-Error_" << learningRate <<
+			"_Single-Core-LSTM-Error_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
 	ofstream errorData(errorDataFileName.str(), ios::app);
 	if (!errorData.is_open()) return -1;
@@ -70,7 +68,7 @@ int main(int argc, char *argv[]) {
 	ostringstream timingDataFileName;
 	timingDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
-			"_Multicore-LSTM-Timing_" << learningRate <<
+			"_Single-Core-LSTM-Timing_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
 	ofstream timingData(timingDataFileName.str(), ios::app);
 	if (!timingData.is_open()) return -1;
@@ -78,7 +76,7 @@ int main(int argc, char *argv[]) {
 	ostringstream accuracyDataFileName;
 	accuracyDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
-			"_Multicore-LSTM-Accuracy_" << learningRate <<
+			"_Single-Core-LSTM-Accuracy_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
 	ofstream accuracyData(accuracyDataFileName.str(), ios::app);
 	if (!accuracyData.is_open()) return -1;
@@ -86,7 +84,7 @@ int main(int argc, char *argv[]) {
 	ostringstream outputDataFileName;
 	outputDataFileName << "/u/trabucco/Desktop/Sequential_Convergence_Data_Files/" <<
 			(getDate()->tm_year + 1900) << "-" << (getDate()->tm_mon + 1) << "-" << _day <<
-			"_Multicore-LSTM-Output_" << learningRate <<
+			"_Single-Core-LSTM-Output_" << learningRate <<
 			"-learning_" << decayRate << "-decay.csv";
 	ofstream outputData(outputDataFileName.str(), ios::app);
 	if (!outputData.is_open()) return -1;
@@ -99,14 +97,14 @@ int main(int argc, char *argv[]) {
 	cout << "Language Dataset loaded in " << (networkEnd - networkStart) << "msecs" << endl;
 
 
-	LSTMNetwork network = LSTMNetwork(dataset.getCharSize(), blocks, cells, learningRate, decayRate);
+	LSTMNetwork network = LSTMNetwork(dataset.getCharSize(), learningRate, decayRate);
 	OutputTarget target = OutputTarget(dataset.getCharSize(), dataset.getCharSize());
 	cout << "Network initialized" << endl;
 
 
-	for (int i = 0; i < (argc - 5); i++) {
-		network.addLayer(atoi(argv[5 + i]));
-		sumNeurons += atoi(argv[5 + i]);
+	for (int i = 0; i < (argc - 3); i++) {
+		network.addLSTMLayer(atoi(argv[3 + i]), 1);
+		sumNeurons += atoi(argv[3 + i]);
 	} network.addLayer(dataset.getCharSize());
 
 
@@ -119,19 +117,17 @@ int main(int argc, char *argv[]) {
 		networkStart = getMSec();
 		for (int i = 0; i < trainingSize && dataset.nextChar(); i++) {
 			DatasetExample data = dataset.getChar();
-			error = network.train(target.getOutputFromTarget(data.current),
+			error = network.forward(target.getOutputFromTarget(data.current),
 					target.getOutputFromTarget(data.next));
-		}
+		} network.backward(); network.clear();
 
 		dataset.reset();
 
 		for (int i = 0; i < trainingSize && dataset.nextChar(); i++) {
 			DatasetExample data = dataset.getChar();
-			output = network.classify(target.getOutputFromTarget(data.current));
-
-			n++;
-			if (target.getTargetFromOutput(output) == (int)data.next) c++;
-		} networkEnd = getMSec();
+			output = network.forward(target.getOutputFromTarget(data.current));
+			if (target.getTargetFromOutput(output) == (int)data.next) c++; n++;
+		} networkEnd = getMSec(); network.clear();
 
 		sumTime += (networkEnd - networkStart);
 		totalIterations += 1;
@@ -154,7 +150,7 @@ int main(int argc, char *argv[]) {
 	vector<vector<double> > seed;
 	seed.push_back(target.getOutputFromTarget(125));
 	for (int i = 0; i < 500; i++) {
-		vector<double> output = network.classify(seed[i]);
+		vector<double> output = network.forward(seed[i]);
 		seed.push_back(output);
 		char text = (char)target.getTargetFromOutput(output);
 		outputData << text;
